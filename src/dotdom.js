@@ -150,7 +150,7 @@ module.exports = window;
         }
         
         if(nnode.constructor === Array) {
-          nnode = H('div', {}, nnode)                                 // Creates a wrapper div for lists of vnodes
+          return _c-- && nnode.map(nrender)                           // Overwrite last child with nodes
         }
 
 
