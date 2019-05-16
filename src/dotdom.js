@@ -264,7 +264,7 @@ module.exports = window;
                                                                       // calling the wrapped factory function
 
                 .P.className =                                        // And then we assign the class name,
-                  [_instance.P.className] + ' ' + className,          // concatenating to the previous value
+                  ([_instance.P.className] + ' ' + className).trim(), // concatenating to the previous value
 
               _instance                                               // And finally we return the instance
             )
