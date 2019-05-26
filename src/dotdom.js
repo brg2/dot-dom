@@ -172,17 +172,7 @@ module.exports = window;
 
               ? dom.replaceChild(                                     // - If not, we replace the old element with the
                   _new_dom,                                           //   new one.
-                  _child,
-                  _child.dataset ? ([_child]).concat(
-                    Array.from(_child.childNodes)).map(
-                      function recurse(ch) {
-                        if(ch.dataset) {
-                          ch.dataset.__ddlst = ch.scrollTop           // Capture Scroll Top/Left in dataset
-                          ch.dataset.__ddlsl = ch.scrollLeft
-                        }
-                        if(ch.childNodes)
-                          Array.from(ch.childNodes).map(recurse)      // Recurse capture in children nodes
-                      }) : null
+                  _child
                 ) && _new_dom                                         //   ... and we make sure we return the new DOM
 
               : _child                                                // - If it's the same, we keep the old child
@@ -195,14 +185,6 @@ module.exports = window;
         /* Set Cache */
 
         _pathState[0] = _new_dom                                      // Cache element in path state
-
-        /* Update Element Scroll */
-        if(_new_dom.dataset) {
-          _new_dom.scrollTop = _new_dom.dataset.__ddlst || 0          // Default to 0 if no data set
-          _new_dom.scrollLeft = _new_dom.dataset.__ddlsl || 0
-          delete _new_dom.dataset.__ddlst                             // Delete the dataset value
-          delete _new_dom.dataset.__ddlsl
-        }
 
         /* Update Element */
 
