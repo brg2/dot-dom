@@ -189,6 +189,18 @@ module.exports = window;
 
         _pathState[0] = _new_dom                                      // Cache element in path state
 
+        /* Use null in place of unused properties */
+
+        if(_new_dom._lk &&
+          _new_dom._lk.constructor === Array) {
+          let pKeys = Object.keys(nnode.P)
+          _new_dom._lk.map(function (lk) {
+            if(pKeys.indexOf(lk) < 0) {
+              nnode.P[lk] = null
+            }
+          })
+        }
+
         /* Update Element */
 
         nnode.trim
@@ -205,7 +217,8 @@ module.exports = window;
                     nnode.P[key]
                   )
 
-                : (_new_dom[key] !== nnode.P[key] &&                  // All properties are applied directly to DOM, as
+                : (_new_dom._lk = Object.keys(nnode.P)) &&            // Save the last used keys in _lk
+                  (_new_dom[key] !== nnode.P[key] &&                  // All properties are applied directly to DOM, as
                   (_new_dom[key] = nnode.P[key]))                     // long as they are different than ther value in the
                                                                       // instance. This includes `onXXX` event handlers.
 
