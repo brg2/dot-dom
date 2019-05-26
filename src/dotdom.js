@@ -125,6 +125,9 @@ module.exports = window;
         }
         
         function update(newState = {}) {                              // 3. The setState function
+          if(_pathState[0].E &&                                       // Don't rerender detached nodes
+            _children[__c] !== _pathState[0])
+            return
           _r = 1                                                      // First set the rendering bit to 1
           _c = __c                                                    // Then set the iterator to the stored index
           nrender(                                                    // We then trigger the same render cycle that will
