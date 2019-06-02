@@ -65,179 +65,181 @@ module.exports = window;
    * @param {VNode|Array<VNode>} vnodes - The node on an array of nodes to render
    * @param {HTLDomElement}
    */
-  global.R = render = (
-    vnodes,                                                           // 1. The vnode tree to render
-    dom,                                                              // 2. The DOMElement where to render into
+  global.R = function() {
 
-    _baseState={},                                                    // a. The base path state object
-    _children=dom.childNodes,                                         // b. Shorthand for accessing the children
-    _c=0,                                                             // c. Counter for processed children
-    _t=0,                                                             // d. Timeout container for rerendering nodes
-    _r=1                                                              // e. Rendering bit to prevent infinite loops
-  ) => {
-    function nrender(
+    let _r = 1,                                                       // Rendering bit to prevent infinite loops
+      _t = 0,                                                         // Timeout container for rerendering nodes
+      render = (
+      vnodes,                                                           // 1. The vnode tree to render
+      dom,                                                              // 2. The DOMElement where to render into
 
-                                                                      // In this `map` loop we ensure that the DOM
-                                                                      // elements correspond to the correct virtual
-                                                                      // node elements.
-        vnode,                                                        // 1. We handle the vnode from the array
-        index,                                                        // 2. And the index
+      _baseState={},                                                    // a. The base path state object
+      _children=dom.childNodes,                                         // b. Shorthand for accessing the children
+      _c=0                                                              // c. Counter for processed children
+    ) => {
+      function nrender(
 
-        _unused1,                                                     // We don't handle the array, but we need the
-                                                                      // placeholder for the local variables after
-        _pathState,
-        _path,
-        __c = _c,                                                     // a. Store the current _c index
-        _child=_children[_c++],                                       // b. Get the next DOM child + increment counter
-        _new_dom,                                                     // c. The new DOM element placeholder
-        nnode = vnode                                                 // d. The new node
+                                                                        // In this `map` loop we ensure that the DOM
+                                                                        // elements correspond to the correct virtual
+                                                                        // node elements.
+          vnode,                                                        // 1. We handle the vnode from the array
+          index,                                                        // 2. And the index
 
-      ) {
-      
-        if(!_pathState) {                                             // If path state is not set
-          if(vnode.E && vnode.E.call && !vnode.E.name && !vnode.E._id)// Adds unique identifier for anonymous functions
-            vnode.E._id = ++anonIndex
-          _path = index + (vnode.E ? ('.' + (vnode.E.trim ? vnode.E : // a. Get the address to the path state based
-              vnode.E.call ?                                          // on index and tag / component name
-                (vnode.E.name || vnode.E._id || '*') : '')) : '')
-          _pathState = _baseState[_path] =                            // b. Retrieve path state for this vnode
-            _baseState[_path] || [0, new Proxy({}, {                  // c. Update base [cache, nodeState(proxy), childrenState]
-          
-              deleteProperty(target, name) {                          // i. deleteProperty (i.e. delete object[name])
-                timer()                                               //   Each of the proxy handlers calls the timer
-                delete target[name]                                   //   function that sets up component re-rendering
-              },
-              set(target, name, value) {                              // ii. set (i.e. object[name] = value
-                timer()
-                target[name] = value
-              },
-              get: function(target, name) {                           // iii. get (i.e. console.log(object[name])
-                timer()
-                return target[name]
-              }
-            }),{}]
-        }
-        
-        function timer(newState = {}) {
-          if(_r) return                                               // Don't run if rendering
-          if(_t) clearTimeout(_t)
-          _t = setTimeout(() => update(newState))                     // Setup a timer to call the state updater
-        }
-        
-        function update(newState = {}) {                              // 3. The setState function
-          if(_pathState[0].E &&                                       // Don't rerender detached nodes
-            _children[__c] !== _pathState[0])
-            return
-          _r = 1                                                      // First set the rendering bit to 1
-          _c = __c                                                    // Then set the iterator to the stored index
-          nrender(                                                    // We then trigger the same render cycle that will
-            vnode,                                                    // update the DOM
-            index,                                                    // vnode index
-            0,                                                        // 0 for _unused1
-            _pathState                                                // Current path state to be re-used
-          )
-          _r = 0                                                      // Set rendering bit to 0
-        }
-
-        /* Expand functional Components */
-
-        while(nnode.E && nnode.E.call) {                              
-          nnode.E.data = _pathState[1]
-            
-          nnode = nnode.E(                                            // If the vnode is a functional component, expand
-                                                                      // it and replace the current vnode variable.
-
-            nnode.P,                                                  // 1. The component properties
-            _pathState[1]                                             // 2. The proxied state
-          )
-        }
-        
-        if(nnode.constructor === Array) {
-          return _c-- && nnode.map(nrender)                           // Overwrite last child with nodes
-        }
-
-
-        /* Create new DOM element */
-
-        _new_dom = _pathState[0] && (_pathState[0].E == nnode.E) ? 
-          _pathState[0] :                                             // We prepare the new DOM element in advance in
-          nnode.trim                                                  // order to spare a few comparison bytes
-            ? document.createTextNode(nnode)
-            : document.createElement(nnode.E);
-
-
-        /* Keep or replace the previous DOM element */
-
-        (_new_dom = 
-          _child                                                      // If we have a previous child we first check if
-            ? ((_child.E != nnode.E || _child !== _new_dom) &&        // the VNode element or the text are the same
-            _child.data != nnode)
-
-              ? dom.replaceChild(                                     // - If not, we replace the old element with the
-                  _new_dom,                                           //   new one.
-                  _child
-                ) && _new_dom                                         //   ... and we make sure we return the new DOM
-
-              : _child                                                // - If it's the same, we keep the old child
-
-            : dom.appendChild(                                        // If we don't have a previous child, just append
-                _new_dom
-              )
-        ).E = nnode.E;                                                // We keep the vnode element to the .E property in
-                                                                      // order for the above comparison to work.
-        /* Set Cache */
-
-        _pathState[0] = _new_dom                                      // Cache element in path state
-
-        /* Use null in place of unused properties */
-
-        if(_new_dom._lk &&
-          _new_dom._lk.constructor === Array) {
-          let pKeys = Object.keys(nnode.P)
-          _new_dom._lk.map(function (lk) {
-            if(pKeys.indexOf(lk) < 0) {
-              nnode.P[lk] = null
-            }
-          })
-        }
-
-        /* Update Element */
-
-        nnode.trim
-          ? (_new_dom.data !== nnode ? _new_dom.data = nnode : null)  // - String nodes update only the text
-          : Object.keys(nnode.P).map(                                 // - Element nodes have properties
-              (
-                key                                                   // 1. The property name
-              ) =>
-
-                key == 'style' ?                                      // The 'style' property is an object and must be
-                                                                      // applied recursively.
-                  Object.assign(
-                    _new_dom[key],                                    // '[key]' is shorter than '.style'
-                    nnode.P[key]
-                  )
-
-                : (_new_dom._lk = Object.keys(nnode.P)) &&            // Save the last used keys in _lk
-                  (_new_dom[key] !== nnode.P[key] &&                  // All properties are applied directly to DOM, as
-                  (_new_dom[key] = nnode.P[key]))                     // long as they are different than ther value in the
-                                                                      // instance. This includes `onXXX` event handlers.
-
-            ) &&
-            render(                                                   // Only if we have an element (and not  text node)
-              nnode.P.C,                                              // we recursively continue rendering into it's
-              _new_dom,                                               // child nodes.
-              _pathState[2]
+          _unused1,                                                     // We don't handle the array, but we need the
+                                                                        // placeholder for the local variables after
+          _pathState,
+          _path,
+          __c = _c,                                                     // a. Store the current _c index
+          _child=_children[_c++],                                       // b. Get the next DOM child + increment counter
+          _new_dom,                                                     // c. The new DOM element placeholder
+          nnode = vnode,                                                // d. The new node
+          timer = (newState = {}) => {
+            if(_r) return                                               // Don't run if rendering
+            if(_t) clearTimeout(_t)
+            _t = setTimeout(() => update(newState))                     // Setup a timer to call the state updater
+          },
+          update = (newState = {}) => {                                 // 3. The setState function
+            if(_pathState[0].E &&                                       // Don't rerender detached nodes
+              _children[__c] !== _pathState[0])
+              return
+            _r = 1                                                      // First set the rendering bit to 1
+            _c = __c                                                    // Then set the iterator to the stored index
+            nrender(                                                    // We then trigger the same render cycle that will
+              vnode,                                                    // update the DOM
+              index,                                                    // vnode index
+              0,                                                        // 0 for _unused1
+              _pathState                                                // Current path state to be re-used
             )
-      }
-    (vnodes.map ? vnodes : [vnodes]).map(nrender);                    // Cast `vnodes` to array if nor already
+            _r = 0                                                      // Set rendering bit to 0
+          }
+        ) {
+        
+          if(!_pathState) {                                             // If path state is not set
+            if(vnode.E && vnode.E.call && !vnode.E.name && !vnode.E._id)// Adds unique identifier for anonymous functions
+              vnode.E._id = ++anonIndex
+            _path = index + (vnode.E ? ('.' + (vnode.E.trim ? vnode.E : // a. Get the address to the path state based
+                vnode.E.call ?                                          // on index and tag / component name
+                  (vnode.E.name || vnode.E._id || '*') : '')) : '')
+            _pathState = _baseState[_path] =                            // b. Retrieve path state for this vnode
+              _baseState[_path] || [0, new Proxy({}, {                  // c. Update base [cache, nodeState(proxy), childrenState]
+            
+                deleteProperty(target, name) {                          // i. deleteProperty (i.e. delete object[name])
+                  timer()                                               //   Each of the proxy handlers calls the timer
+                  delete target[name]                                   //   function that sets up component re-rendering
+                },
+                set(target, name, value) {                              // ii. set (i.e. object[name] = value
+                  timer()
+                  target[name] = value
+                },
+                get(target, name) {                           // iii. get (i.e. console.log(object[name])
+                  timer()
+                  return target[name]
+                }
+              }),{}]
+          }
 
-    /* Remove extraneous nodes */
+          /* Expand functional Components */
 
-    while (_children[_c])                                             // The _c property keeps track of the number of
-      dom.removeChild(_children[_c])                                  // elements in the VDom. If there are more child
-                                                                      // nodes in the DOM, we remove them.
+          while(nnode.E && nnode.E.call) {                              
+            nnode.E.data = _pathState[1]
+              
+            nnode = nnode.E(                                            // If the vnode is a functional component, expand
+                                                                        // it and replace the current vnode variable.
+
+              nnode.P,                                                  // 1. The component properties
+              _pathState[1]                                             // 2. The proxied state
+            )
+          }
+          
+          if(nnode.constructor === Array) {
+            return _c-- && nnode.map(nrender)                           // Overwrite last child with nodes
+          }
+
+
+          /* Create new DOM element */
+
+          _new_dom = _pathState[0] && (_pathState[0].E == nnode.E) ? 
+            _pathState[0] :                                             // We prepare the new DOM element in advance in
+            nnode.trim                                                  // order to spare a few comparison bytes
+              ? document.createTextNode(nnode)
+              : document.createElement(nnode.E);
+
+
+          /* Keep or replace the previous DOM element */
+
+          (_new_dom = 
+            _child                                                      // If we have a previous child we first check if
+              ? ((_child.E != nnode.E || _child !== _new_dom) &&        // the VNode element or the text are the same
+              _child.data != nnode)
+
+                ? dom.replaceChild(                                     // - If not, we replace the old element with the
+                    _new_dom,                                           //   new one.
+                    _child
+                  ) && _new_dom                                         //   ... and we make sure we return the new DOM
+
+                : _child                                                // - If it's the same, we keep the old child
+
+              : dom.appendChild(                                        // If we don't have a previous child, just append
+                  _new_dom
+                )
+          ).E = nnode.E;                                                // We keep the vnode element to the .E property in
+                                                                        // order for the above comparison to work.
+          /* Set Cache */
+
+          _pathState[0] = _new_dom                                      // Cache element in path state
+
+          /* Use null in place of unused properties */
+
+          if(_new_dom._lk &&
+            _new_dom._lk.constructor === Array) {
+            let pKeys = Object.keys(nnode.P)
+            _new_dom._lk.map(function (lk) {
+              if(pKeys.indexOf(lk) < 0) {
+                nnode.P[lk] = null
+              }
+            })
+          }
+
+          /* Update Element */
+
+          nnode.trim
+            ? (_new_dom.data !== nnode ? _new_dom.data = nnode : null)  // - String nodes update only the text
+            : Object.keys(nnode.P).map(                                 // - Element nodes have properties
+                (
+                  key                                                   // 1. The property name
+                ) =>
+
+                  key == 'style' ?                                      // The 'style' property is an object and must be
+                                                                        // applied recursively.
+                    Object.assign(
+                      _new_dom[key],                                    // '[key]' is shorter than '.style'
+                      nnode.P[key]
+                    )
+
+                  : (_new_dom._lk = Object.keys(nnode.P)) &&            // Save the last used keys in _lk
+                    (_new_dom[key] !== nnode.P[key] &&                  // All properties are applied directly to DOM, as
+                    (_new_dom[key] = nnode.P[key]))                     // long as they are different than ther value in the
+                                                                        // instance. This includes `onXXX` event handlers.
+
+              ) &&
+              render(                                                   // Only if we have an element (and not  text node)
+                nnode.P.C,                                              // we recursively continue rendering into it's
+                _new_dom,                                               // child nodes.
+                _pathState[2]
+              )
+        }
+      (vnodes.map ? vnodes : [vnodes]).map(nrender);                    // Cast `vnodes` to array if nor already
+
+      /* Remove extraneous nodes */
+
+      while (_children[_c])                                             // The _c property keeps track of the number of
+        dom.removeChild(_children[_c])                                  // elements in the VDom. If there are more child
+                                                                        // nodes in the DOM, we remove them.
     
-    _r = 0                                                            // Reset rendering bit
+      if(_t) clearTimeout(_t)
+      _t = setTimeout(() => _r = 0)                                           // Reset rendering bit
+    }
+    return render.apply(render, arguments)
   }
 
   /**
