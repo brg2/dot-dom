@@ -142,6 +142,7 @@ module.exports = window;
 
           while(nnode.E && nnode.E.call) {                              
             nnode.E.data = _pathState[1]
+            nnode.E.draw = timer
               
             nnode = nnode.E(                                            // If the vnode is a functional component, expand
                                                                         // it and replace the current vnode variable.
@@ -195,7 +196,10 @@ module.exports = window;
           if(_new_dom._lk) {
             _new_dom._lk.map((lk) => {
               if(pKeys.indexOf(lk) < 0) {
-                _new_dom[lk] = null
+                if(lk == 'className')
+                  _new_dom.removeAttribute('class')
+                else
+                  _new_dom[lk] = null
               }
             })
           }
