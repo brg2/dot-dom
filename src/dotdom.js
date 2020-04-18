@@ -150,6 +150,7 @@ module.exports = window;
               nnode.P,                                                  // 1. The component properties
               _pathState[1]                                             // 2. The proxied state
             )
+            if(!nnode) nnode = H('div')																	// Default div if undefined
           }
           
           if(nnode.constructor === Array) {
