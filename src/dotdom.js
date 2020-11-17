@@ -113,7 +113,7 @@ module.exports = window;
             _r = 0                                                      // Set rendering bit to 0
           }
         ) {
-        
+          if(!vnode) return                                             // Return if no vnode
           if(!_pathState) {                                             // If path state is not set
             if(vnode.E && vnode.E.call && !vnode.E.name && !vnode.E._id)// Adds unique identifier for anonymous functions
               vnode.E._id = ++anonIndex
