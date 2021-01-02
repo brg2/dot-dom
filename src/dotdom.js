@@ -113,7 +113,7 @@ module.exports = window;
             _r = 0                                                      // Set rendering bit to 0
           }
         ) {
-          if(!vnode) return                                             // Return if no vnode
+          if(vnode === null) return                                     // Return if no vnode
           if(!_pathState) {                                             // If path state is not set
             if(vnode.E && vnode.E.call && !vnode.E.name && !vnode.E._id)// Adds unique identifier for anonymous functions
               vnode.E._id = ++anonIndex
@@ -196,12 +196,8 @@ module.exports = window;
 
           if(_new_dom._lk) {
             _new_dom._lk.map((lk) => {
-              if(pKeys.indexOf(lk) < 0) {
-                if(lk == 'className')
-                  _new_dom.removeAttribute('class')
-                else
-                  _new_dom[lk] = null
-              }
+              if(pKeys.indexOf(lk) < 0)
+                _new_dom.removeAttribute(lk == 'className' ? 'class' : lk)
             })
           }
 
