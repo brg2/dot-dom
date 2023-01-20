@@ -164,7 +164,9 @@ module.exports = window;
             _pathState[0] :                                             // We prepare the new DOM element in advance in
             nnode.trim                                                  // order to spare a few comparison bytes
               ? document.createTextNode(nnode)
-              : document.createElement(nnode.E);
+              : document.createElementNS(
+                ['svg','circle','path'].indexOf(nnode.E) < 0 ?
+                  'http://www.w3.org/1999/xhtml' : 'http://www.w3.org/2000/svg', nnode.E);
 
 
           /* Keep or replace the previous DOM element */
@@ -192,12 +194,21 @@ module.exports = window;
 
           /* Use null in place of unused properties */
 
-          let pKeys = Object.keys(nnode.P || {})
+          let C = [], pKeys
+          if(nnode.P && nnode.P.C) {
+            C = nnode.P.C
+            delete nnode.P.C
+          }
+          pKeys = Object.keys(nnode.P || {})
 
           if(_new_dom._lk) {
             _new_dom._lk.map((lk) => {
-              if(pKeys.indexOf(lk) < 0)
-                _new_dom.removeAttribute(lk == 'className' ? 'class' : lk)
+              if(pKeys.indexOf(lk) < 0) {
+                if(/^on|^inner|value/m.test(lk)) {
+                  _new_dom[lk] = null
+                } else
+                  _new_dom.removeAttribute(lk)
+              }
             })
           }
 
@@ -217,15 +228,17 @@ module.exports = window;
                       nnode.P[key]
                     )
 
-                  : (_new_dom._lk = pKeys) &&            // Save the last used keys in _lk
+                  : (_new_dom._lk = pKeys) &&                           // Save the last used keys in _lk
+                    (/^on|^inner|value/m.test(key) ?
                     (_new_dom[key] !== nnode.P[key] &&                  // All properties are applied directly to DOM, as
-                    (_new_dom[key] = nnode.P[key]))                     // long as they are different than ther value in the
-                                                                        // instance. This includes `onXXX` event handlers.
+                    (_new_dom[key] = nnode.P[key])) :                   // long as they are different than ther value in the
+                    (_new_dom.getAttribute(key) !== nnode.P[key] &&     // instance. This includes `onXXX` event handlers.
+                    (_new_dom.setAttribute(key, nnode.P[key]))))
 
               ) &&
               (pKeys.indexOf('innerHTML') < 0 &&
               render(                                                   // Only if we have an element (and not  text node)
-                nnode.P.C,                                              // we recursively continue rendering into it's
+                C,                                                      // we recursively continue rendering into it's
                 _new_dom,                                               // child nodes.
                 _pathState[2]
               ))
@@ -265,8 +278,8 @@ module.exports = window;
               (_instance=targetFn(...args))                           // We first create the Virtual DOM instance by
                                                                       // calling the wrapped factory function
 
-                .P.className =                                        // And then we assign the class name,
-                  ([_instance.P.className] + ' ' + className).trim(), // concatenating to the previous value
+                .P.class =                                        // And then we assign the class name,
+                  ([_instance.P.class] + ' ' + className).trim(), // concatenating to the previous value
 
               _instance                                               // And finally we return the instance
             )
