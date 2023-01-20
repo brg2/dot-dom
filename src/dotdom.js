@@ -165,8 +165,8 @@ module.exports = window;
             nnode.trim                                                  // order to spare a few comparison bytes
               ? document.createTextNode(nnode)
               : document.createElementNS(
-                ['svg','circle','path'].indexOf(nnode.E) < 0 ?
-                  'http://www.w3.org/1999/xhtml' : 'http://www.w3.org/2000/svg', nnode.E);
+                'http://www.w3.org/' + (['svg','circle','path'].indexOf(nnode.E) < 0 ?
+                  '1999/xhtml' : '2000/svg'), nnode.E);
 
 
           /* Keep or replace the previous DOM element */
